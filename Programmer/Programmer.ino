@@ -150,7 +150,6 @@ void setup() {
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE0);
   SPI.setClockDivider(SPI_CLOCK_DIV4);
-  SPI.begin();
 
   // Initialise control pins
   pinMode(PROG, OUTPUT);
@@ -160,8 +159,15 @@ void setup() {
   pinMode(_FCSN_, OUTPUT);
   digitalWrite(_FCSN_, HIGH);
 
+}
+
+
+void loop() {
+
   Serial.println("READY");
   while (!Serial.find("GO\n"));
+
+  SPI.begin();
 
   // Put nRF24LE1 into programming mode
   digitalWrite(PROG, HIGH);
@@ -409,14 +415,10 @@ done:
   delay(10);
   digitalWrite(_RESET_, HIGH);
 
+  SPI.end();
+  
   Serial.println("DONE");
-}
 
-
-
-void loop() {
-  // Do nothing
-  delay(1000);
 }
 
 int ParseHexRecord(struct hexRecordStruct * record, char * inputRecord, int inputRecordLen){
