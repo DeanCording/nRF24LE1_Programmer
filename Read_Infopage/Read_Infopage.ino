@@ -31,10 +31,10 @@
 /*
   Arduino Uno connections:
  
-  See nRF24LE1 Product Specification for corresponding pin numbers.
-  
-  NOTE: nRF24LE1 is a 3.3V device.  Level converters are required to connect it to a
-  5V Arduino.
+ See nRF24LE1 Product Specification for corresponding pin numbers.
+ 
+ NOTE: nRF24LE1 is a 3.3V device.  Level converters are required to connect it to a
+ 5V Arduino.
  
  * D00: Serial RX
  * D01: Serial TX
@@ -89,7 +89,7 @@
 #define RDISMB		0x85  // Enable flash readback protection
 #define ENDEBUG		0x86  // Enable HW debug features
 
-/* ^NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters. 
+/* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters. 
  * Erasing the content of this area WILL cause changes to device behavior and performance. InfoPage area
  * DSYS should ALWAYS be read out and stored prior to using ERASE ALL. Upon completion of the
  * erase the DSYS information must be written back to the flash InfoPage.
@@ -123,63 +123,66 @@ void setup() {
   pinMode(_FCSN_, OUTPUT);
   digitalWrite(_FCSN_, HIGH);
 
-  while(1) {
-    while (!Serial.find("GO\n"));
+  Serial.println("READY");
+  // Wait for GO command from Serial
+  while (!Serial.find("GO\n"));
 
-    // Put nRF24LE1 into programming mode
-    digitalWrite(PROG, HIGH);
-    digitalWrite(_RESET_, LOW);
-    delay(10);
-    digitalWrite(_RESET_, HIGH);
+  // Put nRF24LE1 into programming mode
+  digitalWrite(PROG, HIGH);
+  digitalWrite(_RESET_, LOW);
+  delay(10);
+  digitalWrite(_RESET_, HIGH);
 
-    // Set InfoPage bit so InfoPage flash is read 
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(RDSR);
-    fsr = SPI.transfer(0x00);
-    digitalWrite(_FCSN_, HIGH);
+  // Set InfoPage bit so InfoPage flash is read 
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(RDSR);
+  fsr = SPI.transfer(0x00);
+  digitalWrite(_FCSN_, HIGH);
 
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(WRSR);
-    SPI.transfer(fsr | FSR_INFEN);
-    delay(1);
-    digitalWrite(_FCSN_, HIGH);
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(WRSR);
+  SPI.transfer(fsr | FSR_INFEN);
+  delay(1);
+  digitalWrite(_FCSN_, HIGH);
 
 
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(RDSR);
-    fsr = SPI.transfer(0x00);
-    digitalWrite(_FCSN_, HIGH);
-    
-    if (!(fsr & FSR_INFEN)) {
-      Serial.println("INFOPAGE ENABLE FAILED");
-      goto done;
-    }
- 
-    
-    delay(10);
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(RDSR);
+  fsr = SPI.transfer(0x00);
+  digitalWrite(_FCSN_, HIGH);
 
-    // Read InfoPage contents
-    Serial.println("READING...");
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(READ);
-    SPI.transfer(0);
-    SPI.transfer(0);
-    for (int index = 1; index < 38; index++) {
-      spi_data = SPI.transfer(0x00);
-      Serial.print(index);
-      Serial.print(": ");
-      Serial.println(spi_data);
-    }
-    digitalWrite(_FCSN_, HIGH);      
-    Serial.println("DONE");
-
-    // Take nRF24LE1 out of programming mode
-    digitalWrite(PROG, LOW);
-    digitalWrite(_RESET_, LOW);
-    delay(10);
-    digitalWrite(_RESET_, HIGH);
+  if (!(fsr & FSR_INFEN)) {
+    Serial.println("INFOPAGE ENABLE FAILED");
+    goto done;
   }
 
+
+  delay(10);
+
+  // Read InfoPage contents
+  Serial.println("READING...");
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(READ);
+  SPI.transfer(0);
+  SPI.transfer(0);
+  for (int index = 1; index < 38; index++) {
+    spi_data = SPI.transfer(0x00);
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.println(spi_data);
+  }
+  digitalWrite(_FCSN_, HIGH);      
+
+done:
+  Serial.println("DONE");
+
+  // Take nRF24LE1 out of programming mode
+  digitalWrite(PROG, LOW);
+  digitalWrite(_RESET_, LOW);
+  delay(10);
+  digitalWrite(_RESET_, HIGH);
+
+  SPI.end();
 
 }
 
@@ -189,6 +192,7 @@ void loop() {
   // Do nothing
   delay(1000);
 }
+
 
 
 

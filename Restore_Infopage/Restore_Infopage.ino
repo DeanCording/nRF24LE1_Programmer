@@ -93,7 +93,7 @@
 #define RDISMB		0x85  // Enable flash readback protection
 #define ENDEBUG		0x86  // Enable HW debug features
 
-/* ^NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters. 
+/* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters. 
  * Erasing the content of this area WILL cause changes to device behavior and performance. InfoPage area
  * DSYS should ALWAYS be read out and stored prior to using ERASE ALL. Upon completion of the
  * erase the DSYS information must be written back to the flash InfoPage.
@@ -109,9 +109,9 @@
 byte fsr;          // Flash status register buffer
 byte spi_data;     // SPI data transfer buffer
 
-// NOTE: Enter values for your own chip here (as read by Read_Infopage sketch)  These may not
+// NOTE: Enter values for your own chip here (as read by Read_Infopage sketch)  These values will not
 // work for you.
-byte infopage[37] = {90, 90, 67, 49, 71, 54, 50, 54, 8, 48, 15, 165, 161, 210, 237, 176, 33,
+byte infopage[37] = // {90, 90, 67, 49, 71, 54, 50, 54, 8, 48, 15, 165, 161, 210, 237, 176, 33,
                      177, 80, 13, 24, 255, 255, 255, 255, 130, 255, 255, 255, 255, 0, 0, 255,
                      255, 255, 255, 255}; // Buffer for storing InfoPage content
 
@@ -134,7 +134,7 @@ void setup() {
   pinMode(_FCSN_, OUTPUT);
   digitalWrite(_FCSN_, HIGH);
 
-   Serial.println("READY");
+  Serial.println("READY");
   while (!Serial.find("GO\n"));
 
   // Put nRF24LE1 into programming mode
@@ -267,6 +267,8 @@ done:
   digitalWrite(_RESET_, LOW);
   delay(10);
   digitalWrite(_RESET_, HIGH);
+  
+  SPI.end();
 
   Serial.println("DONE");
 }
