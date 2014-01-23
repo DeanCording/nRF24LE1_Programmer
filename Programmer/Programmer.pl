@@ -38,6 +38,8 @@ if (@ARGV != 2) {
 open(HEX, "<", $ARGV[0]) or die "Cannot open $ARGV[0]: $!";
 open(SERIAL, "+<", $ARGV[1]) or die "Cannot open $ARGV[1]: $!";
 
+sleep 1; # Wait for Arduino to reboot
+
 print SERIAL "GO\n";
 
 while (1) {
@@ -48,6 +50,8 @@ while (1) {
   chomp;
   
   last if /DONE/;
+  
+  print SERIAL "GO\n" if /READY/;
  
   if (/OK/) {
     $_ = <HEX>;
