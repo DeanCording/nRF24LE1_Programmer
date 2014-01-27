@@ -46,10 +46,10 @@
  * D04:  
  *~D05: 
  *~D06: 
- * D07: nRF24LE1 PROG
- * D08: nRF24LE1 _RESET_
- *~D09: nRF24LE1 FCSN
- *~D10: 
+ * D07: 
+ * D08: nRF24LE1 PROG
+ *~D09: nRF24LE1 _RESET_
+ *~D10: nRF24LE1 FCSN
  *~D11: SPI MOSI, nRF24LE1 FMOSI
  * D12: SPI MISO, nRF24LE1 FMISO
  * D13: SPI SCK, On board Status LED, nRF24LE1 FSCK
@@ -69,15 +69,19 @@
  Interupts:
  0:  
  1:
+
  
  */
 #include <SPI.h>
 
 
 // Specify pins in use
-#define PROG      7   // nRF24LE1 Program
-#define _RESET_   8   // nRF24LE1 Reset
-#define _FCSN_    9   // nRF24LE1 Chip select
+#define PROG      8   // nRF24LE1 Program
+#define _RESET_   9   // nRF24LE1 Reset
+#define _FCSN_    10  // nRF24LE1 Chip select
+
+#define TXD       10  // nRF24LE1 UART/TXD
+#define RXD       7   // nRF24LE1 UART/RXD
 
 // SPI Flash operations commands
 #define WREN 		0x06  // Set flase write enable latch
@@ -401,7 +405,7 @@ void loop() {
         Serial.print(" ");
         Serial.println(hexRecord.rec_data[index]);
         digitalWrite(_FCSN_, HIGH);      
-        //goto done;
+        goto done;
       }
     }
     digitalWrite(_FCSN_, HIGH);      
