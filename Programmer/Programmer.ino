@@ -235,10 +235,15 @@ void flash() {
   SPI.begin();
 
   Serial.println("READY");
-  if (!Serial.find("GO\n")) {
+  if (!Serial.find("GO ")) {
     Serial.println("TIMEOUT");
     return;
   }
+  
+ // Read nupp and rdismb
+ byte nupp = Serial.parseInt();
+ byte rdismb = Serial.parseInt();
+ Serial.read();
 
 
   // Put nRF24LE1 into programming mode
@@ -309,9 +314,14 @@ void flash() {
 
   // Restore InfoPage content
   // Clear Flash MB readback protection (RDISMB)
-  infopage[35] = 0xFF;
+  infopage[35] = rdismb;
   // Set all pages unprotected (NUPP)
-  infopage[32] = 0xFF;
+  infopage[32] = nupp;
+  
+  Serial.print("RDISMB=");
+  Serial.println(rdismb);
+  Serial.print("NUPP=");
+  Serial.println(nupp);
 
   Serial.println("RESTORING INFOPAGE....");
   // Set flash write enable latch

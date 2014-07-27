@@ -26,9 +26,32 @@
 use strict;
 use warnings;
 
+my $nupp=0xff;
+my $rdismb=0xff;
 
-if (@ARGV != 2) {
-  print "Usage: $0 <Hex.file> <Arduino Serial Port>\n";
+# Read NUPP from command line
+if (defined($ARGV[2])) {
+  $nupp = $ARGV[2];
+  chomp $nupp;
+  $nupp = oct($nupp) if $nupp =~ /^0/; # catches 077 0b10 0x20
+  if ($nupp !~ /^\d+?$/) {
+    undef $nupp;
+  }
+}
+
+# Read RDISMB from command line
+if (defined($ARGV[3])) {
+  $rdismb = $ARGV[3];
+  chomp $rdismb;
+  $rdismb = oct($rdismb) if $rdismb =~ /^0/; # catches 077 0b10 0x20
+  if ($rdismb !~ /^\d+?$/) {
+    undef $rdismb;
+  }
+}
+
+
+if ( (@ARGV < 2) || (!defined($nupp)) || (!defined($rdismb))) {
+  print "Usage: $0 <Hex.file> <Arduino Serial Port> [NUPP] [RDISMB]\n";
   exit;
 }
 
@@ -51,7 +74,7 @@ do {
   chomp;
 } until /READY/;
 
-print SERIAL "GO\n";
+print SERIAL "GO $nupp $rdismb\n";
 
 while (1) {
 
