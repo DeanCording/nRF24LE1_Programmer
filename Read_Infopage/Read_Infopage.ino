@@ -126,6 +126,9 @@ void setup() {
   Serial.println("READY");
   // Wait for GO command from Serial
   while (!Serial.find("GO\n"));
+  Serial.println("READYING");
+  delay(1000);
+  Serial.println("SETTING UP");
 
   // Put nRF24LE1 into programming mode
   digitalWrite(PROG, HIGH);
