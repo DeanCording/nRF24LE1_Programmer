@@ -163,7 +163,7 @@ void setup() {
   SPI.transfer(READ);
   SPI.transfer(0);
   SPI.transfer(0);
-  for (int index = 0; index < 100; index++) {
+  for (int index = 0; index < 16*1024; index++) {
     spi_data = SPI.transfer(0x00);
     Serial.print(index);
     Serial.print(": ");
