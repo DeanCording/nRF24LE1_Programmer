@@ -55,7 +55,8 @@ void loop() {
   progStart();
 
   // Set InfoPage bit so InfoPage flash is read 
-  disableInfoPage();
+  if (!disableInfoPage())
+    goto done;
 
   // Read from MainPage
   Serial.println("READING...");
