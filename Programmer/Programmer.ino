@@ -133,6 +133,8 @@ int ParseHexRecord(struct hexRecordStruct * record, char * inputRecord, int inpu
 }
 
 void flash() {
+  bool rewrite_info_page;
+
   Serial.println("FLASH");
 
   // Initialise control pins
@@ -167,24 +169,35 @@ void flash() {
     Serial.print("\n");
   }
 
+  rewrite_info_page = true;
+  if (infopage[35] == 0xFF && infopage[32] == 0xFF) {
+    Serial.println("SKIPPING REWRITE OF INFOPAGE");
+    rewrite_info_page = false;
+  }
+
+  if (!rewrite_info_page)
+    disableInfoPage();
+
   // Erase flash
   Serial.println("ERASING FLASH...");
   flash_erase_all();
 
-  // Restore InfoPage content
-  // Clear Flash MB readback protection (RDISMB)
-  infopage[35] = 0xFF;
-  // Set all pages unprotected (NUPP)
-  infopage[32] = 0xFF;
+  if (!rewrite_info_page) {
+    // Restore InfoPage content
+    // Clear Flash MB readback protection (RDISMB)
+    infopage[35] = 0xFF;
+    // Set all pages unprotected (NUPP)
+    infopage[32] = 0xFF;
 
-  Serial.println("RESTORING INFOPAGE....");
+    Serial.println("RESTORING INFOPAGE....");
 
-  // Write back InfoPage content
-  flash_program_verify("INFOPAGE", infopage, 37, 0, 0);
+    // Write back InfoPage content
+    flash_program_verify("INFOPAGE", infopage, 37, 0, 0);
 
-  // Clear InfoPage enable bit so main flash block is programed
-  if (!disableInfoPage())
-    goto done;
+    // Clear InfoPage enable bit so main flash block is programed
+    if (!disableInfoPage())
+      goto done;
+  }
 
   while(true){
     // Prompt perl script for data
