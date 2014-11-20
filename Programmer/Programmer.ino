@@ -185,7 +185,7 @@ void flash() {
   Serial.println("ERASING FLASH...");
   flash_erase_all();
 
-  if (!rewrite_info_page) {
+  if (rewrite_info_page) {
     // Restore InfoPage content
     // Clear Flash MB readback protection (RDISMB)
     infopage[35] = 0xFF;
