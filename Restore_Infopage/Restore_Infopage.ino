@@ -82,7 +82,7 @@ void loop() {
 
   // Restore InfoPage content
   Serial.println("RESTORING INFOPAGE....");
-  flash_program_verify(infopage, 37, 0, 0);
+  flash_program_verify("INFOPAGE", infopage, 37, 0, 0);
 
   // Clear InfoPage enable bit so main flash block is programed
   disableInfoPage();
