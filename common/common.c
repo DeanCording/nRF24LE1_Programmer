@@ -126,7 +126,7 @@ void writeFSR(byte val) {
 bool enableInfoPage() {
   byte fsr1 = readFSR();
   if (fsr1 == 255) {
-    Serial.print("FSR READ AS 255, CHECK YOUR WIRING!");
+    Serial.println("FSR READ AS 255, CHECK YOUR WIRING!");
     return false;
   }
 
@@ -148,6 +148,10 @@ bool enableInfoPage() {
 bool disableInfoPage() {
   byte fsr1 = readFSR();
   writeFSR(fsr1 & ~FSR_INFEN);
+  if (fsr1 == 255) {
+    Serial.println("FSR READ AS 255, CHECK YOUR WIRING!");
+    return false;
+  }
 
   byte fsr2 = readFSR();
   if ((fsr2 & FSR_INFEN) != 0) {
