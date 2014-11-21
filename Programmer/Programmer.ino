@@ -246,10 +246,6 @@ done:
 }
 
 void read_infopage() {
-  // start serial port:
-  Serial.begin(57600);
-  Serial.setTimeout(3000);
-
   progSetup();
 
   Serial.println("READY");
@@ -285,10 +281,6 @@ done:
 }
 
 void read_mainpage() {
-  // start serial port:
-  Serial.begin(57600);
-  Serial.setTimeout(3000);
-
   progSetup();
 
   Serial.println("READY");
@@ -345,10 +337,6 @@ static byte restore_infopage_data[37] =
 };
 
 void restore_infopage() {
-  // start serial port:
-  Serial.begin(57600);
-  Serial.setTimeout(3000);
-
   progSetup();
 
   Serial.println("READY");
