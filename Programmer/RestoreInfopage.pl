@@ -42,7 +42,7 @@ open(SERIAL, "+<", $ARGV[0]) or die "Cannot open $ARGV[0]: $!";
 sleep(3);
 
 #Send the restore infopage trigger character
-print SERIAL "\x04";
+print SERIAL "\x05";
 
 do {
   while (!defined($_ = <SERIAL>)) {}

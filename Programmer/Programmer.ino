@@ -46,8 +46,8 @@ SoftwareSerial nRF24LE1Serial(nRF24LE1_TXD, nRF24LE1_RXD);
 
 #define FLASH_TRIGGER   0x01    // Magic character to trigger uploading of flash
 #define READ_INFOPAGE_TRIGGER 0x02
-#define READ_MAINPAGE_TRIGGER 0x03
-#define RESTORE_INFOPAGE_TRIGGER 0x04
+#define READ_MAINPAGE_TRIGGER 0x04
+#define RESTORE_INFOPAGE_TRIGGER 0x05
 
 
 // Hex file processing definitions
