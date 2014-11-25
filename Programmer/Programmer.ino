@@ -147,7 +147,7 @@ void flash() {
   // Initialise control pins
   progSetup();
 
-  Serial.println("READY");
+  Serial.println("READY FLASH");
   if (!Serial.find("GO\n")) {
     Serial.println("TIMEOUT");
     return;
@@ -252,7 +252,7 @@ done:
 void read_infopage() {
   progSetup();
 
-  Serial.println("READY");
+  Serial.println("READY READ INFOPAGE");
   // Wait for GO command from Serial
   while (!Serial.find("GO")) {
     Serial.println("READY");
@@ -287,7 +287,7 @@ done:
 void read_mainpage() {
   progSetup();
 
-  Serial.println("READY");
+  Serial.println("READY READ MAINPAGE");
   // Wait for GO command from Serial
   while (!Serial.find("GO")) {
     Serial.println("READY");
@@ -343,7 +343,7 @@ static byte restore_infopage_data[37] =
 void restore_infopage() {
   progSetup();
 
-  Serial.println("READY");
+  Serial.println("READY RESTORE INFOPAGE");
   while (!Serial.find("GO")) {
     Serial.println("READY");
   };
