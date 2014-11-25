@@ -49,9 +49,11 @@ do {
   while (!defined($_ = <SERIAL>)) {}
   print;
   chomp;
+  exit 1 if /TIMEOUT/;
 } until /READY/;
 
 print SERIAL "GO\n";
+print "GO\n";
 
 while (1) {
 
@@ -60,6 +62,7 @@ while (1) {
   print;
   chomp;
 
+  last if /TIMEOUT/;
   last if /READY/;
 
   last if /DONE/;
@@ -74,4 +77,4 @@ while (1) {
 close(HEX);
 close(SERIAL);
 
-
+exit 1 if /TIMEOUT/;
