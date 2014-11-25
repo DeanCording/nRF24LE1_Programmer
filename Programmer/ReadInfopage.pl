@@ -27,33 +27,30 @@ use strict;
 use warnings;
 
 
-if (@ARGV != 2) {
-  print "Usage: $0 <Hex.file> <Arduino Serial Port>\n";
+if (@ARGV != 1) {
+  print "Usage: $0 <Arduino Serial Port>\n";
   exit;
 }
 
 # Serial port settings to suit Arduino
-system "stty -F $ARGV[1] 10:0:18b1:0:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0";
+system "stty -F $ARGV[0] 10:0:18b1:0:3:1c:7f:15:4:0:1:0:11:13:1a:0:12:f:17:16:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0";
 
 
-open(HEX, "<", $ARGV[0]) or die "Cannot open $ARGV[0]: $!";
-open(SERIAL, "+<", $ARGV[1]) or die "Cannot open $ARGV[1]: $!";
+open(SERIAL, "+<", $ARGV[0]) or die "Cannot open $ARGV[0]: $!";
 
 #Wait for Arduino reset
 sleep(3);
 
-#Send the flash trigger character
-print SERIAL "\x01";
+#Send the read infopage trigger character
+print SERIAL "\x02";
 
 do {
   while (!defined($_ = <SERIAL>)) {}
   print;
   chomp;
-  exit 1 if /TIMEOUT/;
 } until /READY/;
 
 print SERIAL "GO\n";
-print "GO\n";
 
 while (1) {
 
@@ -62,19 +59,7 @@ while (1) {
   print;
   chomp;
 
-  last if /TIMEOUT/;
-  last if /READY/;
-
   last if /DONE/;
-
-  if (/OK/) {
-    $_ = <HEX>;
-    print;
-    print SERIAL;
-  }
 }
 
-close(HEX);
 close(SERIAL);
-
-exit 1 if /TIMEOUT/;

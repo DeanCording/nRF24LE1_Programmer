@@ -31,93 +31,27 @@
 
  */
 
-/*
-  Arduino Uno connections:
-
-  See nRF24LE1 Product Specification for corresponding pin numbers.
-
-  NOTE: nRF24LE1 is a 3.3V device.  Level converters are required to connect it to a
-  5V Arduino.
-
- * D00: Serial RX
- * D01: Serial TX
- * D02:
- *~D03:
- * D04:
- *~D05:
- *~D06:
- * D07: nRF24LE1 UART/RXD
- * D08: nRF24LE1 PROG
- *~D09: nRF24LE1 _RESET_
- *~D10: nRF24LE1 FCSN, nRF24LE1 UART/TXD
- *~D11: SPI MOSI, nRF24LE1 FMOSI
- * D12: SPI MISO, nRF24LE1 FMISO
- * D13: SPI SCK, On board Status LED, nRF24LE1 FSCK
- * A0:
- * A1:
- * A2:
- * A3:
- * A4: I2C SDA
- * A5: I2C SCL
- * 5V:
- * 3.3V: nRF24LE1 VDD
- * AREF:
- * GND:  nRF24LE1 VCC
-
- (~ PWM)
-
- Interupts:
- 0:
- 1:
-
-
- */
 #include <SPI.h>
 #include <SoftwareSerial.h>
 
-// Specify pins in use
-#define PROG      8   // nRF24LE1 Program
-#define _RESET_   9   // nRF24LE1 Reset
-#define _FCSN_    10  // nRF24LE1 Chip select
+#include "../common/common.c"
 
 // nRF24LE1 Serial port connections.  These will differ with the different chip
 // packages
-#define nRF24LE1_TXD   10   // nRF24LE1 UART/TXD
-#define nRF24LE1_RXD    7   // nRF24LE1 UART/RXD
+#define nRF24LE1_TXD   2   // nRF24LE1 UART/TXD
+#define nRF24LE1_RXD   3   // nRF24LE1 UART/RXD
 
-SoftwareSerial nRF24LE1Serial(nRF24LE1_TXD, nRF24LE1_RXD);
+#if 0
+SoftwareSerial nRF24LE1Serial(nRF24LE1_RXD, nRF24LE1_TXD);
+#else
+#define nRF24LE1Serial Serial1
+#endif
 #define NRF24LE1_BAUD  19200
 
 #define FLASH_TRIGGER   0x01    // Magic character to trigger uploading of flash
-
-
-// SPI Flash operations commands
-#define WREN 		0x06  // Set flase write enable latch
-#define WRDIS		0x04  // Reset flash write enable latch
-#define RDSR		0x05  // Read Flash Status Register (FSR)
-#define WRSR		0x01  // Write Flash Status Register (FSR)
-#define READ		0x03  // Read data from flash
-#define PROGRAM		0x02  // Write data to flash
-#define ERASE_PAGE	0x52  // Erase addressed page
-#define ERASE_ALL	0x62  // Erase all pages in flash info page^ and/or main block
-#define RDFPCR		0x89  // Read Flash Protect Configuration Register (FPCR)
-#define RDISMB		0x85  // Enable flash readback protection
-#define ENDEBUG		0x86  // Enable HW debug features
-
-/* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning
- * parameters. Erasing the content of this area WILL cause changes to device
- * behavior and performance. InfoPage area DSYS should ALWAYS be read out and
- * stored prior to using ERASE ALL. Upon completion of theerase the DSYS
- * information must be written back to the flash InfoPage.
- *
- * Use the Read_Infopage sketch to make a backup.
- */
-
-// Flash Status Register (FSR) bits
-#define FSR_STP                 B01000000  // Enable code execution start from protected flash area
-#define FSR_WEN                 B00100000  // Write enable latch
-#define FSR_RDYN                B00010000  // Flash ready flag - active low
-#define FSR_INFEN               B00001000  // Flash InfoPage enable
+#define READ_INFOPAGE_TRIGGER 0x02
+#define READ_MAINPAGE_TRIGGER 0x04
+#define RESTORE_INFOPAGE_TRIGGER 0x05
 
 
 // Hex file processing definitions
@@ -206,175 +140,71 @@ int ParseHexRecord(struct hexRecordStruct * record, char * inputRecord, int inpu
 }
 
 void flash() {
+  bool rewrite_info_page;
 
   Serial.println("FLASH");
-  // Initialise SPI
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE0);
-  SPI.setClockDivider(SPI_CLOCK_DIV4);
 
   // Initialise control pins
-  pinMode(PROG, OUTPUT);
-  digitalWrite(PROG, LOW);
-  pinMode(_RESET_, OUTPUT);
-  digitalWrite(_RESET_, HIGH);
-  pinMode(_FCSN_, OUTPUT);
-  digitalWrite(_FCSN_, HIGH);
+  progSetup();
 
-  SPI.begin();
-
-  Serial.println("READY");
+  Serial.println("READY FLASH");
   if (!Serial.find("GO\n")) {
     Serial.println("TIMEOUT");
     return;
   }
 
-
   // Put nRF24LE1 into programming mode
-  digitalWrite(PROG, HIGH);
-  digitalWrite(_RESET_, LOW);
-  delay(10);
-  digitalWrite(_RESET_, HIGH);
+  progStart();
 
-  delay(10);
-
-  // Set InfoPage enable bit so all flash is erased
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(RDSR);
-  fsr = SPI.transfer(0x00);
-  digitalWrite(_FCSN_, HIGH);
-
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(WRSR);
-  SPI.transfer(fsr | FSR_INFEN);
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
-
-  // Check InfoPage enable bit was set
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(RDSR);
-  fsr = SPI.transfer(0x00);
-  digitalWrite(_FCSN_, HIGH);
-
-  if (!(fsr & FSR_INFEN)) {
-    Serial.println("INFOPAGE ENABLE FAILED");
+  if (readFSR() == 255) {
+    Serial.println("FSR failed to read (FSR=255), check your wiring!");
     goto done;
   }
+
+  // Set InfoPage enable bit so all flash is erased
+  if (!enableInfoPage())
+    goto done;
 
   // Read InfoPage content so it can be restored after erasing flash
   Serial.println("SAVING INFOPAGE...");
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(READ);
-  SPI.transfer(0);
-  SPI.transfer(0);
+  flash_read(infopage, 37, 0, 0);
   for (int index = 0; index < 37; index++) {
-    infopage[index] = SPI.transfer(0x00);
+    Serial.print("INFO ");
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.print(infopage[index]);
+    Serial.print("\n");
   }
-  digitalWrite(_FCSN_, HIGH);
+
+  rewrite_info_page = true;
+  if (infopage[35] == 0xFF && infopage[32] == 0xFF) {
+    Serial.println("SKIPPING REWRITE OF INFOPAGE");
+    rewrite_info_page = false;
+  }
+
+  if (!rewrite_info_page)
+    disableInfoPage();
 
   // Erase flash
   Serial.println("ERASING FLASH...");
-  // Set flash write enable latch
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(WREN);
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
+  flash_erase_all();
 
-  // Erase all flash pages
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(ERASE_ALL);
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
+  if (rewrite_info_page) {
+    // Restore InfoPage content
+    // Clear Flash MB readback protection (RDISMB)
+    infopage[35] = 0xFF;
+    // Set all pages unprotected (NUPP)
+    infopage[32] = 0xFF;
 
-  // Check flash is ready
-  do {
-    delay(60);
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(RDSR);
-    fsr = SPI.transfer(0x00);
-    digitalWrite(_FCSN_, HIGH);
-  }
-  while (fsr & FSR_RDYN);
+    Serial.println("RESTORING INFOPAGE....");
 
-  // Restore InfoPage content
-  // Clear Flash MB readback protection (RDISMB)
-  infopage[35] = 0xFF;
-  // Set all pages unprotected (NUPP)
-  infopage[32] = 0xFF;
+    // Write back InfoPage content
+    flash_program_verify("INFOPAGE", infopage, 37, 0, 0);
 
-  Serial.println("RESTORING INFOPAGE....");
-  // Set flash write enable latch
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(WREN);
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
-
-  // Write back InfoPage content
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(PROGRAM);
-  SPI.transfer(0);
-  SPI.transfer(0);
-  for (int index = 0; index < 37; index++) {
-    SPI.transfer(infopage[index]);
-  }
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
-
-  // Check flash is ready
-  do {
-    delay(10);
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(RDSR);
-    fsr = SPI.transfer(0x00);
-    digitalWrite(_FCSN_, HIGH);
-  }
-  while (fsr & FSR_RDYN);
-
-  // Verify data that was written
-  Serial.println("VERFIYING INFOPAGE....");
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(READ);
-  SPI.transfer(0);
-  SPI.transfer(0);
-  for (int index = 0; index < 37; index++) {
-    spi_data = SPI.transfer(0x00);
-    if (infopage[index] != spi_data) {
-      Serial.print("INFOPAGE VERIFY FAILED ");
-      Serial.print(index);
-      Serial.print(": WROTE ");
-      Serial.print(infopage[index]);
-      Serial.print(" READ ");
-      Serial.println(spi_data);
-      digitalWrite(_FCSN_, HIGH);
+    // Clear InfoPage enable bit so main flash block is programed
+    if (!disableInfoPage())
       goto done;
-    }
   }
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
-
-  // Clear InfoPage enable bit so main flash block is programed
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(RDSR);
-  fsr = SPI.transfer(0x00);
-  digitalWrite(_FCSN_, HIGH);
-
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(WRSR);
-  SPI.transfer(fsr & ~FSR_INFEN);
-  delay(1);
-  digitalWrite(_FCSN_, HIGH);
-
-  // Check InfoPage enable bit was cleared
-  digitalWrite(_FCSN_, LOW);
-  SPI.transfer(RDSR);
-  fsr = SPI.transfer(0x00);
-  digitalWrite(_FCSN_, HIGH);
-
-  if (fsr & FSR_INFEN) {
-    Serial.println("INFOPAGE DISABLE FAILED");
-    goto done;
-  }
-
 
   while(true){
     // Prompt perl script for data
@@ -407,79 +237,140 @@ void flash() {
       goto done;
     }
 
-    // Set flash write enable latch
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(WREN);
-    delay(1);
-    digitalWrite(_FCSN_, HIGH);
-
-    // Check flash is ready
-    do {
-      delay(10);
-      digitalWrite(_FCSN_, LOW);
-      SPI.transfer(RDSR);
-      fsr = SPI.transfer(0x00);
-      digitalWrite(_FCSN_, HIGH);
-    }
-    while (fsr & FSR_RDYN);
-
-    // Program flash
-    Serial.println("WRITING...");
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(PROGRAM);
-    SPI.transfer(highByte(hexRecord.rec_address));
-    SPI.transfer(lowByte(hexRecord.rec_address));
-    for (int index = 0; index < hexRecord.rec_data_len; index++) {
-      SPI.transfer(hexRecord.rec_data[index]);
-    }
-    delay(1);
-    digitalWrite(_FCSN_, HIGH);
-
-
-    // Wait for flash to write
-    do {
-      delay(hexRecord.rec_data_len);  // Wait 1 millisecond per byte written
-      digitalWrite(_FCSN_, LOW);
-      SPI.transfer(RDSR);
-      fsr = SPI.transfer(0x00);
-      digitalWrite(_FCSN_, HIGH);
-    }
-    while (fsr & FSR_RDYN);
-
-    // Read back flash to verify
-    Serial.println("VERIFYING...");
-    digitalWrite(_FCSN_, LOW);
-    SPI.transfer(READ);
-    SPI.transfer(highByte(hexRecord.rec_address));
-    SPI.transfer(lowByte(hexRecord.rec_address));
-    for (int index = 0; index < hexRecord.rec_data_len; index++) {
-      spi_data = SPI.transfer(0x00);
-      if ( spi_data != hexRecord.rec_data[index]) {
-        Serial.print("FAILED ");
-        Serial.print(hexRecord.rec_address + index);
-        Serial.print(": ");
-        Serial.print(spi_data);
-        Serial.print(" ");
-        Serial.println(hexRecord.rec_data[index]);
-        digitalWrite(_FCSN_, HIGH);
-        goto done;
-      }
-    }
-    digitalWrite(_FCSN_, HIGH);
-
+    // Program and verify data
+    if (!flash_program_verify("DATA", hexRecord.rec_data, hexRecord.rec_data_len, highByte(hexRecord.rec_address), lowByte(hexRecord.rec_address)))
+      break;
   }
 
 done:
   // Take nRF24LE1 out of programming mode
-  digitalWrite(PROG, LOW);
-  digitalWrite(_RESET_, LOW);
-  delay(10);
-  digitalWrite(_RESET_, HIGH);
-
+  progEnd();
   SPI.end();
-
   Serial.println("DONE");
+}
 
+void read_infopage() {
+  progSetup();
+
+  Serial.println("READY READ INFOPAGE");
+  // Wait for GO command from Serial
+  while (!Serial.find("GO")) {
+    Serial.println("READY");
+  }
+  Serial.println("PREPARING");
+  delay(1000);
+  Serial.println("SETTING UP");
+
+  // Put nRF24LE1 into programming mode
+  progStart();
+
+  // Set InfoPage bit so InfoPage flash is read
+  if (!enableInfoPage())
+    goto done;
+
+  // Read InfoPage contents
+  Serial.println("READING...");
+  byte buf[37];
+  flash_read(buf, sizeof(buf), 0, 0);
+  for (int index = 0; index < (int)sizeof(buf); index++) {
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.println(buf[index]);
+  }
+
+done:
+  progEnd();
+  SPI.end();
+  Serial.println("DONE");
+}
+
+void read_mainpage() {
+  progSetup();
+
+  Serial.println("READY READ MAINPAGE");
+  // Wait for GO command from Serial
+  while (!Serial.find("GO")) {
+    Serial.println("READY");
+  }
+  Serial.println("PREPARING");
+  delay(1000);
+  Serial.println("SETTING UP");
+
+  // Put nRF24LE1 into programming mode
+  progStart();
+
+  // Set InfoPage bit so InfoPage flash is read
+  if (!disableInfoPage())
+    goto done;
+
+  // Read from MainPage
+  Serial.println("READING...");
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(READ);
+  SPI.transfer(0);
+  SPI.transfer(0);
+  for (int index = 0; index < 16*1024; index++) {
+    byte spi_data = SPI.transfer(0x00);
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.println(spi_data);
+  }
+  digitalWrite(_FCSN_, HIGH);
+
+done:
+
+  // Take nRF24LE1 out of programming mode
+  progEnd();
+  SPI.end();
+  Serial.println("DONE");
+}
+
+
+static byte restore_infopage_data[37] =
+{
+ 90,  90,  67,  65,
+ 87,  48,  49,  55,
+ 12,  49,  33,  36,
+ 42,  84, 136, 159,
+ 38, 177,  81,  16,
+ 11, 255, 255, 255,
+255, 130, 255, 255,
+255, 255,   0,   0,
+255, 255, 255, 255,
+255,
+};
+
+void restore_infopage() {
+  progSetup();
+
+  Serial.println("READY RESTORE INFOPAGE");
+  while (!Serial.find("GO")) {
+    Serial.println("READY");
+  };
+
+  // Put nRF24LE1 into programming mode
+  progStart();
+
+  // Set InfoPage enable bit so all flash is erased
+  if (!enableInfoPage())
+    goto done;
+
+  // Erase flash
+  Serial.println("ERASING FLASH...");
+  flash_erase_all();
+
+  // Restore InfoPage content
+  Serial.println("RESTORING INFOPAGE....");
+  flash_program_verify("INFOPAGE", restore_infopage_data, 37, 0, 0);
+
+  // Clear InfoPage enable bit so main flash block is programed
+  disableInfoPage();
+
+done:
+  // Take nRF24LE1 out of programming mode
+  progEnd();
+  SPI.end();
+  Serial.println("DONE");
 }
 
 
@@ -500,8 +391,6 @@ void setup() {
 
 
   nRF24LE1Serial.begin(NRF24LE1_BAUD);
-
-
 }
 
 char serialBuffer;
@@ -516,18 +405,34 @@ void loop() {
   if (Serial.available() > 0) {
     serialBuffer = Serial.read();
     // Check if data received on USB serial port is the magic character to start flashing
-    if (serialBuffer == FLASH_TRIGGER) {
+    switch (serialBuffer) {
+    case FLASH_TRIGGER:
       nRF24LE1Serial.end();
       flash();
       nRF24LE1Serial.begin(NRF24LE1_BAUD);
-    } else {
+      break;
+
+    case READ_INFOPAGE_TRIGGER:
+      nRF24LE1Serial.end();
+      read_infopage();
+      nRF24LE1Serial.begin(NRF24LE1_BAUD);
+      break;
+
+    case READ_MAINPAGE_TRIGGER:
+      nRF24LE1Serial.end();
+      read_mainpage();
+      nRF24LE1Serial.begin(NRF24LE1_BAUD);
+      break;
+
+    case RESTORE_INFOPAGE_TRIGGER:
+      nRF24LE1Serial.end();
+      restore_infopage();
+      nRF24LE1Serial.begin(NRF24LE1_BAUD);
+      break;
+
+    default:
       // Otherwise pass through serial data received
       nRF24LE1Serial.write(serialBuffer);
     }
   }
 }
-
-
-
-
-
