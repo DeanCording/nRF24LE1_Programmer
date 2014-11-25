@@ -38,10 +38,14 @@
 
 // nRF24LE1 Serial port connections.  These will differ with the different chip
 // packages
-#define nRF24LE1_TXD   10   // nRF24LE1 UART/TXD
-#define nRF24LE1_RXD    7   // nRF24LE1 UART/RXD
+#define nRF24LE1_TXD   2   // nRF24LE1 UART/TXD
+#define nRF24LE1_RXD   3   // nRF24LE1 UART/RXD
 
-SoftwareSerial nRF24LE1Serial(nRF24LE1_TXD, nRF24LE1_RXD);
+#if 0
+SoftwareSerial nRF24LE1Serial(nRF24LE1_RXD, nRF24LE1_TXD);
+#else
+#define nRF24LE1Serial Serial1
+#endif
 #define NRF24LE1_BAUD  19200
 
 #define FLASH_TRIGGER   0x01    // Magic character to trigger uploading of flash
