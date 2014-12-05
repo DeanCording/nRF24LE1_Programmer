@@ -62,7 +62,7 @@
  * 5V:
  * 3.3V: nRF24LE1 VDD
  * AREF:
- * GND:  nRF24LE1 VCC
+ * GND:  nRF24LE1 VSS
 
  (~ PWM)
 
@@ -70,10 +70,21 @@
  0:
  1:
 
+ Pin-Mapping:
+ Arduino	24Pin		32Pin		48Pin
+ D07 (RXD)	12 P0.6		10 P0.4		15 P1.1
+ D08 (PROG)	 5 PROG		 6 PROG		10 PROG
+ D09 (RESET)	13 RESET	19 RESET	30 RESET
+ D10 (FCSN,TXD)	11 P0.5		15 P1.1		22 P2.0
+ D11 (FMOSI)	 9 P0.3		13 P0.7		19 P1.5
+ D12 (FMISO)	10 P0.4		14 P1.0		20 P1.6
+ D13 (FSCK)	 8 P0.2		11 P0.5 	16 P1.2
 
  */
 #include <SPI.h>
 #include <SoftwareSerial.h>
+#define NRFTYPE 24
+
 
 // Specify pins in use
 #define PROG      8   // nRF24LE1 Program
@@ -224,10 +235,15 @@ void flash() {
   SPI.begin();
 
   Serial.println("READY");
-  if (!Serial.find("GO\n")) {
+  if (!Serial.find("GO ")) {
     Serial.println("TIMEOUT");
     return;
   }
+  
+ // Read nupp and rdismb
+ byte nupp = Serial.parseInt();
+ byte rdismb = Serial.parseInt();
+ Serial.read();
 
 
   // Put nRF24LE1 into programming mode
@@ -298,9 +314,14 @@ void flash() {
 
   // Restore InfoPage content
   // Clear Flash MB readback protection (RDISMB)
-  infopage[35] = 0xFF;
+  infopage[35] = rdismb;
   // Set all pages unprotected (NUPP)
-  infopage[32] = 0xFF;
+  infopage[32] = nupp;
+  
+  Serial.print("RDISMB=");
+  Serial.println(rdismb);
+  Serial.print("NUPP=");
+  Serial.println(nupp);
 
   Serial.println("RESTORING INFOPAGE....");
   // Set flash write enable latch
