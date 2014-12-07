@@ -1,23 +1,23 @@
 /*
  Read_Mainpage
- 
- Reads MainPage flash contents from Nordic nRF24LE1 SOC RF chips using SPI interface from 
+
+ Reads MainPage flash contents from Nordic nRF24LE1 SOC RF chips using SPI interface from
  an Arduino.
- 
+
  Upload sketch, start serial monitor, type 'GO' to start sketch running.
- 
+
  Copyright (c) 2014 Dean Cording
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,7 +25,7 @@
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
- 
+
  */
 
 /*
@@ -96,7 +96,7 @@
 #define RDISMB		0x85  // Enable flash readback protection
 #define ENDEBUG		0x86  // Enable HW debug features
 
-/* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters. 
+/* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning parameters.
  * Erasing the content of this area WILL cause changes to device behavior and performance. InfoPage area
  * DSYS should ALWAYS be read out and stored prior to using ERASE ALL. Upon completion of the
  * erase the DSYS information must be written back to the flash InfoPage.
@@ -132,7 +132,10 @@ void setup() {
 
   Serial.println("READY");
   // Wait for GO command from Serial
-  //while (!Serial.find("GO\n"));
+  while (!Serial.find("GO\n"));
+  Serial.println("READYING");
+  delay(1000);
+  Serial.println("SETTING UP");
 
   // Put nRF24LE1 into programming mode
   digitalWrite(PROG, HIGH);
@@ -140,7 +143,7 @@ void setup() {
   delay(10);
   digitalWrite(_RESET_, HIGH);
 
-  // Set InfoPage bit so InfoPage flash is read 
+  // Set InfoPage bit so InfoPage flash is read
   digitalWrite(_FCSN_, LOW);
   SPI.transfer(RDSR);
   fsr = SPI.transfer(0x00);
@@ -170,15 +173,15 @@ void setup() {
   SPI.transfer(READ);
   SPI.transfer(0);
   SPI.transfer(0);
-  for (int index = 0; index < 100; index++) {
+  for (int index = 0; index < 16*1024; index++) {
     spi_data = SPI.transfer(0x00);
     Serial.print(index);
     Serial.print(": ");
     Serial.println(spi_data);
   }
-  digitalWrite(_FCSN_, HIGH);  
+  digitalWrite(_FCSN_, HIGH);
 
-done:    
+done:
   Serial.println("DONE");
 
   // Take nRF24LE1 out of programming mode
@@ -194,7 +197,7 @@ done:
 
 
 void loop() {
-  
+
   // Do nothing
   delay(1000);
 }
