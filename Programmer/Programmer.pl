@@ -1,7 +1,20 @@
 #!/usr/bin/perl
 
 # Programmer.pl - Program to feed Intel HEX files produced by SDCC to the nRF24LE1 Arduino
-# programmer sketch.
+# programmer sketch.  Will optionally set the number of protected pages and disable read of
+# main memory block by SPI
+
+# Usage:
+#      programmer.pl <Hex file> <Arduino Serial Port> [NUPP] [RDISMB]
+#
+#      NUPP - Number of write unprotected memory blocks (0 - 31) - 0xFF: All pages unprotected
+#      RDISMB - External read protect main memory block - 0x00 Protected, 0xFF Unprotected
+
+# Note:
+#      Program execution normally starts from address 0x0000 unless there is an odd number of ones
+#      in the 16 topmost addresses of the flash memory (0x3FF0 - 0x3FFF).  How to set those bits
+#      is left as an exercise for the reader. (Hint: Hack the hex file to write in those addresses.
+#      You will also need to set an address offset for your code.)
 
 #  Copyright (c) 2014 Dean Cording
 #

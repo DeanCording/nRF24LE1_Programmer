@@ -118,7 +118,7 @@ SoftwareSerial nRF24LE1Serial(nRF24LE1_TXD, nRF24LE1_RXD);
 /* NOTE: The InfoPage area DSYS are used to store nRF24LE1 system and tuning
  * parameters. Erasing the content of this area WILL cause changes to device
  * behavior and performance. InfoPage area DSYS should ALWAYS be read out and
- * stored prior to using ERASE ALL. Upon completion of theerase the DSYS
+ * stored prior to using ERASE ALL. Upon completion of the erase, the DSYS
  * information must be written back to the flash InfoPage.
  *
  * Use the Read_Infopage sketch to make a backup.
@@ -239,7 +239,7 @@ void flash() {
     Serial.println("TIMEOUT");
     return;
   }
-  
+
  // Read nupp and rdismb
  byte nupp = Serial.parseInt();
  byte rdismb = Serial.parseInt();
@@ -317,7 +317,7 @@ void flash() {
   infopage[35] = rdismb;
   // Set all pages unprotected (NUPP)
   infopage[32] = nupp;
-  
+
   Serial.print("RDISMB=");
   Serial.println(rdismb);
   Serial.print("NUPP=");
