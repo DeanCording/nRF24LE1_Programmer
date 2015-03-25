@@ -7,6 +7,8 @@
  Upload sketch, start serial monitor, type 'GO' to start sketch running.
 
  Copyright (c) 2014 Dean Cording
+ 
+ Updated by Samy Kamkar to support reading NV data (additional 1.5kB total) 
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -168,12 +170,40 @@ void setup() {
   delay(10);
 
   // Read from MainPage
-  Serial.println("READING...");
+  Serial.println("READING MainPage...");
   digitalWrite(_FCSN_, LOW);
   SPI.transfer(READ);
   SPI.transfer(0);
   SPI.transfer(0);
   for (int index = 0; index < 16*1024; index++) {
+    spi_data = SPI.transfer(0x00);
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.println(spi_data);
+  }
+  digitalWrite(_FCSN_, HIGH);
+
+  // Read from NV data (extended endurance)
+  Serial.println("READING NV (extended)...");
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(READ);
+  SPI.transfer(0xFA);
+  SPI.transfer(0x00);
+  for (int index = 0; index < 512; index++) {
+    spi_data = SPI.transfer(0x00);
+    Serial.print(index);
+    Serial.print(": ");
+    Serial.println(spi_data);
+  }
+  digitalWrite(_FCSN_, HIGH);
+
+  // Read from NV data (normal endurance)
+  Serial.println("READING NV (normal)...");
+  digitalWrite(_FCSN_, LOW);
+  SPI.transfer(READ);
+  SPI.transfer(0xFC);
+  SPI.transfer(0x00);
+  for (int index = 0; index < 1024; index++) {
     spi_data = SPI.transfer(0x00);
     Serial.print(index);
     Serial.print(": ");
